@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Биогельминтозы Тюменской области</title>
+    
+    <!-- Подключаем Leaflet CSS и JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Подключаем D3.js для цветовой шкалы и графиков -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #2c5aa0;
+            --primary-dark: #1e3c72;
+            --secondary: #4ecdc4;
+            --accent: #ff6b6b;
+            --light: #f8fafc;
+            --dark: #2d3748;
+            --gray: #a0aec0;
+            --success: #48bb78;
+            --warning: #ecc94b;
+            --danger: #f56565;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Шапка */
+        .header { 
+            position: relative;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            height: 70px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            z-index: 1000;
+        }
+        
+        .header-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header-logo {
+            height: 45px;
+            width: 45px;
+            margin-right: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .header-logo:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .header-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 3;
+        }
+        
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Навигационная панель */
+        .navbar {
+            background: white;
+            box-shadow: var(--shadow);
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 900;
+        }
+        
+        .navbar-container {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .nav-panel {
+            padding: 16px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            color: var(--dark);
+            transition: var(--transition);
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-panel:hover {
+            color: var(--primary);
+            background: #f7fafc;
+        }
+        
+        .nav-panel.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: #f0f7ff;
+        }
+        
+        .nav-panel i {
+            font-size: 18px;
+        }
+
+        /* Основной контент */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 70px - 57px);
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .map-section {
+            display: flex;
+            height: 70%;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Боковая панель */
+        .sidebar {
+            width: 360px;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-header h3 {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .sidebar-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Карта */
+        .map-container {
+            flex: 1;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Фильтры */
+.filter-card {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.filter-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.select-wrapper {
+    position: relative; /* Добавляем это */
+    margin: 12px 0; /* Добавляем отступы */
+}
+
+.select-wrapper:after {
+    content: "▼";
+    font-size: 10px;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-45%);
+    pointer-events: none;
+    color: var(--gray);
+}
+
+select {
+    appearance: none;
+    background: white;
+    border: 2px solid #e3e8f0;
+    border-radius: 8px;
+    padding: 12px 15px;
+    width: 100%;
+    font-size: 14px;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
+}
+
+select:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--dark);
+    font-size: 14px;
+}
+        
+        /* Легенда */
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        
+        .legend h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 15px 0;
+            font-size: 15px;
+            color: var(--dark);
+        }
+        
+        .legend-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        
+        .legend-label {
+            font-size: 13px;
+            color: var(--dark);
+        }
+        
+        /* Статистика */
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .stats h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 15px 0;
+            color: var(--dark);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #edf2f7;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        /* Графики */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 30%;
+        }
+        
+        .chart-box {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+        
+        .chart-box:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chart-btn {
+            background: #f7fafc;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--dark);
+            transition: var(--transition);
+        }
+        
+        .chart-btn:hover {
+            background: #edf2f7;
+            color: var(--primary);
+        }
+        
+        .chart-container {
+            flex: 1;
+            width: 100%;
+            min-height: 150px;
+            background: #f8fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            font-style: italic;
+        }
+        
+        /* Уведомление о загрузке */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            font-weight: 500;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Всплывающие подсказки */
+        .district-tooltip {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+            backdrop-filter: blur(5px);
+        }
+        
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+        
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes loadingDots {
+            0%, 20% { content: "."; }
+            40% { content: ".."; }
+            60%, 100% { content: "..."; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 1200px) {
+            .main-container {
+                padding: 0 15px;
+            }
+            
+            .sidebar {
+                width: 320px;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .map-section {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+            
+            .charts-container {
+                height: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 16px;
+            }
+            
+            .navbar-container {
+                overflow-x: auto;
+                padding: 0;
+            }
+            
+            .nav-panel {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+            
+            .nav-panel i {
+                font-size: 16px;
+            }
+            
+            .legend-items {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .chart-actions {
+                align-self: flex-end;
+            }
+        }
+
+        /* Страницы контента */
+        .page-content {
+            display: none;
+            height: calc(100vh - 127px);
+            overflow: auto;
+            padding: 0 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            margin: 20px 0;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <canvas id="header-canvas" class="header-canvas"></canvas>
+        <div class="header-content">
+            <div class="header-logo pulse">
+                <img src="images/logo.png" alt="Роспотребнадзор" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+
+            <div class="header-title">ФБУН ТНИИКИП Роспотребнадзора</div>
+            <div class="header-actions">
+                <button class="header-btn" title="Обновить данные">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="header-btn" title="Настройки">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="header-btn" title="Помощь">
+                    <i class="fas fa-question"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Навигационная панель -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="nav-panel active" data-page="map">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Биогельминтозы</span>
+            </div>
+            <div class="nav-panel" data-page="malaria">
+                <i class="fas fa-mosquito"></i>
+                <span>Малярия</span>
+            </div>
+            <div class="nav-panel" data-page="analytics">
+                <i class="fas fa-chart-line"></i>
+                <span>Аналитика</span>
+            </div>
+            <div class="nav-panel" data-page="reports">
+                <i class="fas fa-file-alt"></i>
+                <span>Отчеты</span>
+            </div>
+            <div class="nav-panel" data-page="about">
+                <i class="fas fa-info-circle"></i>
+                <span>О проекте</span>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Контент страниц -->
+    <div id="page-map" class="page-content active">
+        <div class="main-container">
+            <div class="map-section">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Биогельминтозы</h2>
+                        <h3>Тюменской области</h3>
+                    </div>
+                    
+                    <div class="sidebar-content">
+                        <div class="filter-card">
+                            <div class="filter-title">
+                                <i class="fas fa-filter"></i>
+                                <span>Фильтры данных</span>
+                            </div>
+                            
+                            <div class="select-wrapper">
+                                <label for="year-select"><i class="fas fa-calendar-alt"></i> Год:</label>
+                                <select id="year-select">
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2021">2021</option>
+                                </select>
+                            </div>
+                            
+                            <div class="select-wrapper">
+                                <label for="disease-select"><i class="fas fa-virus"></i> Заболевание:</label>
+                                <select id="disease-select">
+                                    <option value="opisthorchiasis">Описторхоз</option>
+                                    <option value="echinococcosis">Эхинококкоз</option>
+                                    <option value="diphyllobothriasis">Дифиллоботриоз</option>
+                                    <option value="alveococcosis">Альвеококкоз</option>
+                                </select>
+                            </div>
+                            
+                            <div class="select-wrapper">
+                                <label for="district-select"><i class="fas fa-map-marker-alt"></i> Район:</label>
+                                <select id="district-select">
+                                    <option value="all">Все районы</option>
+                                    <option value="городской округ Тюмень">городской округ Тюмень</option>
+                                    <option value="городской округ Тобольск">городской округ Тобольск</option>
+                                    <option value="городской округ Ишим">городской округ Ишим</option>
+                                    <option value="городской округ Ялуторовск">городской округ Ялуторовск</option>
+                                    <option value="Заводоуковский муниципальный округ">Заводоуковский муниципальный округ</option>
+                                    <option value="Абатский район">Абатский район</option>
+                                    <option value="Армизонский район">Армизонский район</option>
+                                    <option value="Аромашевский район">Аромашевский район</option>
+                                    <option value="Бердюжский район">Бердюжский район</option>
+                                    <option value="Вагайский район">Вагайский район</option>
+                                    <option value="Викуловский район">Викуловский район</option>
+                                    <option value="Голышмановский муниципальный округ">Голышмановский муниципальный округ</option>
+                                    <option value="Исетский район">Исетский район</option>
+                                    <option value="Казанский район">Казанский район</option>
+                                    <option value="Нижнетавдинский район">Нижнетавдинский район</option>
+                                    <option value="Омутинский район">Омутинский район</option>
+                                    <option value="Сладковский район">Сладковский район</option>
+                                    <option value="Сорокинский район">Сорокинский район</option>
+                                    <option value="Тюменский район">Тюменский район</option>
+                                    <option value="Уватский район">Уватский район</option>
+                                    <option value="Упоровский район">Упоровский район</option>
+                                    <option value="Юргинский район">Юргинский район</option>
+                                    <option value="Ярковский район">Ярковский район</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="legend">
+                            <h4><i class="fas fa-layer-group"></i> Заболеваемость на 100 тыс. чел.</h4>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #f7fbff;"></div>
+                                    <span class="legend-label">0 - 10</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #deebf7;"></div>
+                                    <span class="legend-label">10 - 25</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #c6dbef;"></div>
+                                    <span class="legend-label">25 - 50</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #9ecae1;"></div>
+                                    <span class="legend-label">50 - 100</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #6baed6;"></div>
+                                    <span class="legend-label">100 - 200</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #4292c6;"></div>
+                                    <span class="legend-label">200+</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats">
+                            <h4><i class="fas fa-chart-pie"></i> Общая статистика</h4>
+                            <div class="stat-item">
+                                <div class="stat-label">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>Всего случаев:</span>
+                                </div>
+                                <div class="stat-value" id="total-cases">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Средняя заболеваемость:</span>
+                                </div>
+                                <div class="stat-value" id="avg-rate">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">
+                                    <i class="fas fa-map-marked"></i>
+                                    <span>Районов с данными:</span>
+                                </div>
+                                <div class="stat-value" id="districts-count">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Динамика заболеваемости по годам</span>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" title="Настроить график">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="chart-btn" title="Скачать график">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="trend-chart-svg">
+                        График будет отображен здесь
+                    </div>
+                </div>
+                
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Сравнение заболеваний</span>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" title="Настроить график">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="chart-btn" title="Скачать график">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="comparison-chart-svg">
+                        График будет отображен здесь
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-malaria" class="page-content">
+        <h1 class="page-title"><i class="fas fa-mosquito"></i> Малярия</h1>
+        <p>Здесь будет размещена информация о маляриологической ситуации в Российской Федерации</p>
+        <div class="malaria-content">
+            <!-- Контент для малярии будет добавлен позже -->
+        </div>
+    </div>
+    
+    <div id="page-analytics" class="page-content">
+        <h1 class="page-title"><i class="fas fa-chart-line"></i> Аналитика данных</h1>
+        <p>Здесь будет размещена расширенная аналитика по заболеваемости биогельминтозами в Тюменской области.</p>
+        <div class="analytics-content">
+            <!-- Контент для аналитики -->
+        </div>
+    </div>
+    
+    <div id="page-reports" class="page-content">
+        <h1 class="page-title"><i class="fas fa-file-alt"></i> Отчеты</h1>
+        <p>Раздел с отчетами и экспортом данных.</p>
+        <div class="reports-content">
+            <!-- Контент для отчетов -->
+        </div>
+    </div>
+    
+    <div id="page-about" class="page-content">
+    <h1 class="page-title"><i class="fas fa-info-circle"></i> О проекте</h1>
+    
+    <div class="about-content" style="max-width: 1000px; margin: 0 auto;">
+        <!-- Герой-секция с фоном института -->
+        <div style="position: relative; border-radius: 12px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <!-- Фон института -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('images/institute-background.jpg') center/cover; z-index: 1;"></div>
+            
+            <!-- Синий overlay (увеличена прозрачность) -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(44, 90, 160, 0.7) 0%, rgba(30, 60, 114, 0.7) 100%); z-index: 2;"></div>
+            
+            <!-- Контент поверх фона -->
+            <div style="position: relative; z-index: 3; padding: 50px 30px; text-align: center; color: white;">
+                <h2 style="font-size: 28px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Информационная система мониторинга биогельминтозов Тюменской области
+                </h2>
+                
+                <p style="font-size: 18px; line-height: 1.6; margin: 0; opacity: 0.95;">
+                    Разработана для анализа и визуализации данных о распространении паразитарных заболеваний 
+                    на территории Тюменской области. Система предоставляет инструменты для эпидемиологического 
+                    надзора и принятия обоснованных решений в области здравоохранения.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Остальной контент -->
+        <div style="background: linear-gradient(135deg, #f0f7ff 0%, #e6f3ff 100%); padding: 25px; border-radius: 10px; margin: 25px 0;">
+            <h3 style="color: #1e3c72; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-list-check"></i>
+                Основные функции системы:
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-map" style="color: white; font-size: 18px;"></i>
+                        </div>
+                        <h4 style="margin: 0; color: #2c5aa0;">Визуализация данных на карте</h4>
+                    </div>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                        Интерактивное отображение заболеваемости по районам Тюменской области 
+                        с цветовой дифференциацией по уровню распространения.
+                    </p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-chart-line" style="color: white; font-size: 18px;"></i>
+                        </div>
+                        <h4 style="margin: 0; color: #2c5aa0;">Анализ динамики заболеваемости</h4>
+                    </div>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                        Отслеживание изменения показателей заболеваемости по годам 
+                        и выявление тенденций развития эпидемиологической ситуации.
+                    </p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-balance-scale" style="color: white; font-size: 18px;"></i>
+                        </div>
+                        <h4 style="margin: 0; color: #2c5aa0;">Сравнительный анализ заболеваний</h4>
+                    </div>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                        Сопоставление различных паразитарных заболеваний для выявления 
+                        особенностей их распространения и факторов риска.
+                    </p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-alt" style="color: white; font-size: 18px;"></i>
+                        </div>
+                        <h4 style="margin: 0; color: #2c5aa0;">Генерация отчетов</h4>
+                    </div>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                        Создание детальных отчетов и экспорт данных для дальнейшего анализа 
+                        и использования в научных и практических целях.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 25px; border-radius: 10px; margin: 25px 0;">
+            <h3 style="color: #1e3c72; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-building"></i>
+                Контактная информация:
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-university" style="color: white; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; color: #2c5aa0;">Организация</h4>
+                        <p style="margin: 0; color: #4a5568;">ФБУН ТНИИКИП Роспотребнадзора</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-phone" style="color: white; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; color: #2c5aa0;">Телефон</h4>
+                        <p style="margin: 0; color: #4a5568;">+7 (3452) 12-34-56</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-envelope" style="color: white; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; color: #2c5aa0;">Email</h4>
+                        <p style="margin: 0; color: #4a5568;">info@tniiikip.ru</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <p style="margin: 0; font-size: 14px;">
+                <i class="fas fa-copyright"></i> 2024 ФБУН ТНИИКИП Роспотребнадзора. Все права защищены.
+            </p>
+        </div>
+    </div>
+</div>
+
+    <script>
+    // Глобальные переменные
+    let currentGeoJSONLayer = null;
+    let allGeoJSONData = null;
+    let currentDisease = 'opisthorchiasis';
+    let currentYear = '2024';
+    let map;
+
+    // Анимация для шапки с точками и линиями
+    document.addEventListener('DOMContentLoaded', function() {
+            const headerCanvas = document.getElementById('header-canvas');
+            const headerCtx = headerCanvas.getContext('2d');
+            
+            // Установка размеров canvas шапки
+            function setupHeaderCanvas() {
+                headerCanvas.width = headerCanvas.parentElement.offsetWidth;
+                headerCanvas.height = headerCanvas.parentElement.offsetHeight;
+            }
+            
+            setupHeaderCanvas();
+            window.addEventListener('resize', setupHeaderCanvas);
+            
+            // Создание точек для шапки
+            const headerPoints = [];
+            const headerMouse = { x: undefined, y: undefined, radius: 80 };
+            
+            class HeaderPoint {
+                constructor() {
+                    this.x = Math.random() * headerCanvas.width;
+                    this.y = Math.random() * headerCanvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = Math.random() * 1 - 0.5;
+                    this.speedY = Math.random() * 1 - 0.5;
+                    this.color = `hsla(0, 0%, 100%, ${0.4 + Math.random() * 0.3})`;
+                }
+                
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    
+                    if (this.x > headerCanvas.width || this.x < 0) {
+                        this.speedX = -this.speedX;
+                    }
+                    if (this.y > headerCanvas.height || this.y < 0) {
+                        this.speedY = -this.speedY;
+                    }
+                    
+                    // Взаимодействие с мышью
+                    if (headerMouse.x !== undefined && headerMouse.y !== undefined) {
+                        const dx = headerMouse.x - this.x;
+                        const dy = headerMouse.y - this.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < headerMouse.radius) {
+                            const angle = Math.atan2(dy, dx);
+                            const force = (headerMouse.radius - distance) / headerMouse.radius;
+                            this.x -= Math.cos(angle) * force * 5;
+                            this.y -= Math.sin(angle) * force * 5;
+                        }
+                    }
+                }
+                
+                draw() {
+                    headerCtx.fillStyle = this.color;
+                    headerCtx.beginPath();
+                    headerCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    headerCtx.fill();
+                }
+            }
+            
+            // Инициализация точек для шапки
+            function initHeaderPoints() {
+                headerPoints.length = 0;
+                const numberOfPoints = Math.min(80, Math.floor((headerCanvas.width * headerCanvas.height) / 800));
+                
+                for (let i = 0; i < numberOfPoints; i++) {
+                    headerPoints.push(new HeaderPoint());
+                }
+            }
+            
+            initHeaderPoints();
+            
+            // Соединение точек в шапке
+            function connectHeaderPoints() {
+                for (let i = 0; i < headerPoints.length; i++) {
+                    for (let j = i; j < headerPoints.length; j++) {
+                        const dx = headerPoints[i].x - headerPoints[j].x;
+                        const dy = headerPoints[i].y - headerPoints[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 80) {
+                            headerCtx.beginPath();
+                            headerCtx.strokeStyle = `hsla(0, 0%, 100%, ${0.3 - distance/266})`;
+                            headerCtx.lineWidth = 0.8;
+                            headerCtx.moveTo(headerPoints[i].x, headerPoints[i].y);
+                            headerCtx.lineTo(headerPoints[j].x, headerPoints[j].y);
+                            headerCtx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Анимация шапки
+            function animateHeader() {
+                headerCtx.clearRect(0, 0, headerCanvas.width, headerCanvas.height);
+                
+                for (let i = 0; i < headerPoints.length; i++) {
+                    headerPoints[i].update();
+                    headerPoints[i].draw();
+                }
+                
+                connectHeaderPoints();
+                
+                requestAnimationFrame(animateHeader);
+            }
+            
+            animateHeader();
+            
+            // Отслеживание мыши для шапки
+            const headerElement = document.querySelector('.header');
+            
+            headerElement.addEventListener('mousemove', function(event) {
+                const rect = headerElement.getBoundingClientRect();
+                headerMouse.x = event.clientX - rect.left;
+                headerMouse.y = event.clientY - rect.top;
+            });
+            
+            headerElement.addEventListener('mouseleave', function() {
+                headerMouse.x = undefined;
+                headerMouse.y = undefined;
+            });
+
+        // Обработчики для фильтров 
+        document.getElementById('year-select').addEventListener('change', function(e) {
+            currentYear = e.target.value;
+            if (window.csvData) {
+                updateMapWithCSVData(); // Используем CSV данные
+            } else {
+                updateMapWithFilters(); // Используем обычные данные
+            }
+        });
+
+        document.getElementById('disease-select').addEventListener('change', function(e) {
+            currentDisease = e.target.value;
+            if (window.csvData) {
+                updateMapWithCSVData(); // Используем CSV данные
+            } else {
+                updateMapWithFilters(); // Используем обычные данные
+            }
+        });
+
+        // Инициализация карты
+        map = L.map('map').setView([58.0, 66.0], 6);
+        
+        // Добавляем слой карты
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Добавляем контроль масштаба
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Загрузка GeoJSON данных
+        loadGeoJSONData();
+    });
+
+    // Функция для определения цвета по уровню заболеваемости
+    function getColor(rate) {
+    rate = Number(rate) || 0;
+    return rate > 200 ? '#4292c6' :
+           rate > 100 ? '#6baed6' :
+           rate > 50  ? '#9ecae1' :
+           rate > 25  ? '#c6dbef' :
+           rate > 10  ? '#deebf7' :
+                        '#f7fbff';
+}
+// Функция для стиля границ (более темные и контрастные)
+function getBorderStyle(rate) {
+    return {
+        weight: 2.5, // Увеличиваем толщину
+        opacity: 1,
+        color: '#2c5aa0', // Темно-синий цвет для границ
+        dashArray: '', // Убираем пунктир
+        fillOpacity: 0.8
+    };
+}
+
+    // Функция для получения русского названия заболевания
+    function getDiseaseName(diseaseKey) {
+        const diseases = {
+            'opisthorchiasis': 'Описторхоз',
+            'echinococcosis': 'Эхинококкоз',
+            'diphyllobothriasis': 'Дифиллоботриоз',
+            'alveococcosis': 'Альвеококкоз'
+        };
+        return diseases[diseaseKey] || diseaseKey;
+    }
+
+    // Загрузка GeoJSON данных
+    function loadGeoJSONData() {
+        fetch('./tyumen_districts.geojson')
+            .then(response => {
+                console.log('Статус загрузки GeoJSON:', response.status);
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки GeoJSON: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(geojsonData => {
+                console.log('GeoJSON успешно загружен');
+                allGeoJSONData = geojsonData;
+                
+                // ЗАГРУЖАЕМ CSV ДАННЫЕ ПОСЛЕ GeoJSON
+                loadCSVData();
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки GeoJSON:', error);
+                useDemoData();
+            });
+    }
+
+    // Функция загрузки CSV данных
+    function loadCSVData() {
+        fetch('./data.csv')
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка загрузки CSV');
+                return response.text();
+            })
+            .then(csvText => {
+                console.log('CSV получен, первые 500 символов:', csvText.substring(0, 500));
+                
+                const lines = csvText.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) {
+                    throw new Error('CSV файл пустой или содержит только заголовок');
+                }
+                
+                const headers = lines[0].split(';').map(h => h.trim());
+                console.log('Заголовки CSV:', headers);
+                
+                const csvData = {};
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(';').map(v => v.trim());
+                    if (values.length > 1 && values[0]) {
+                        const district = values[0];
+                        csvData[district] = {};
+                        
+                        for (let j = 1; j < headers.length && j < values.length; j++) {
+                            csvData[district][headers[j]] = values[j];
+                        }
+                        
+                        console.log(`Данные для ${district}:`, csvData[district]);
+                    }
+                }
+                
+                window.csvData = csvData;
+                console.log('Все CSV данные:', csvData);
+                
+                // Обновляем карту с данными из CSV
+                updateMapWithCSVData();
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки CSV:', error);
+                // Используем обычные данные
+                updateMapWithFilters();
+            });
+    }
+// Функция обновления карты с CSV данными (ИСПРАВЛЕННАЯ ДЛЯ НАСЕЛЕНИЯ)
+function updateMapWithCSVData() {
+    if (!allGeoJSONData) {
+        console.log('GeoJSON данные не загружены');
+        return;
+    }
+    
+    if (!window.csvData || Object.keys(window.csvData).length === 0) {
+        console.log('CSV данные не загружены или пустые');
+        updateMapWithFilters();
+        return;
+    }
+    
+    // Удаляем предыдущий слой
+    if (currentGeoJSONLayer) {
+        map.removeLayer(currentGeoJSONLayer);
+    }
+    
+    // Создаем копию GeoJSON данных для работы
+    const updatedGeoJSON = JSON.parse(JSON.stringify(allGeoJSONData));
+    
+    // ДЛЯ ОТЛАДКИ: выводим все доступные ключи из первого района CSV
+    const firstDistrict = Object.keys(window.csvData)[0];
+    if (firstDistrict) {
+        console.log('Доступные ключи в CSV для первого района:', Object.keys(window.csvData[firstDistrict]));
+    }
+    
+    // Карта соответствия названий районов между CSV и GeoJSON
+    const districtNameMap = {
+        'Тюмень': 'городской округ Тюмень',
+        'Тобольск': 'городской округ Тобольск', 
+        'Ишим': 'городской округ Ишим',
+        'Ялуторовск': 'городской округ Ялуторовск',
+        'Голышмановский муниципальный округ': 'Голышмановский район',
+        'Заводоуковский муниципальный округ': 'Заводоуковский район',
+        // Добавьте другие соответствия при необходимости
+    };
+    
+    // Счетчики для отладки
+    let matchedDistricts = 0;
+    let unmatchedDistricts = 0;
+    
+    // Обновляем свойства в GeoJSON данными из CSV
+    updatedGeoJSON.features.forEach(feature => {
+        if (!feature.properties) {
+            feature.properties = {};
+        }
+        
+        // Получаем название района из GeoJSON
+        let geoDistrictName = feature.properties.name || feature.properties.NAME || 
+                             feature.properties.ADM2_RU || feature.properties.district || 
+                             feature.properties.район || '';
+        
+        // Если имя района не найдено, пропускаем этот район
+        if (!geoDistrictName) {
+            console.warn('Не удалось определить название района в GeoJSON:', feature);
+            unmatchedDistricts++;
+            return;
+        }
+        
+        // Нормализуем название (приводим к нижнему регистру для сравнения)
+        const normalizedGeoName = geoDistrictName.toLowerCase().trim();
+        
+        // Ищем соответствие в CSV данных
+        let csvDistrictName = null;
+        let csvDistrictData = null;
+        
+        // 1. Прямое сравнение
+        for (const csvName in window.csvData) {
+            if (csvName.toLowerCase().trim() === normalizedGeoName) {
+                csvDistrictName = csvName;
+                csvDistrictData = window.csvData[csvName];
+                break;
+            }
+        }
+        
+        // 2. Сравнение через карта соответствий
+        if (!csvDistrictData) {
+            for (const csvName in window.csvData) {
+                const mappedName = districtNameMap[csvName];
+                if (mappedName && mappedName.toLowerCase().trim() === normalizedGeoName) {
+                    csvDistrictName = csvName;
+                    csvDistrictData = window.csvData[csvName];
+                    break;
+                }
+            }
+        }
+        
+        // 3. Частичное совпадение (последний вариант)
+        if (!csvDistrictData) {
+            for (const csvName in window.csvData) {
+                const normalizedCsvName = csvName.toLowerCase().trim();
+                if (normalizedCsvName.includes(normalizedGeoName) || 
+                    normalizedGeoName.includes(normalizedCsvName)) {
+                    csvDistrictName = csvName;
+                    csvDistrictData = window.csvData[csvName];
+                    console.log(`Частичное совпадение: ${csvName} -> ${geoDistrictName}`);
+                    break;
+                }
+            }
+        }
+        
+        if (csvDistrictData) {
+            matchedDistricts++;
+            
+            // Формируем ключи для текущего года и заболевания
+            const casesKey = `${currentDisease}_cases_${currentYear}`;
+            const rateKey = `${currentDisease}_rate_${currentYear}`;
+            
+            // Ключи для населения с учетом года - ИСПРАВЛЕНО!
+            const populationKeys = [
+                `Население (population) ${currentYear}`, // Основной формат
+                `Население ${currentYear}`, // Альтернативный формат
+                `population ${currentYear}`, // Английский вариант
+                `Население_${currentYear}`, // С подчеркиванием
+                `population_${currentYear}`, // Английский с подчеркиванием
+                `Население(population)${currentYear}`, // Без пробелов
+                `Население` // Общее население без года
+            ];
+            
+            // Получаем значения случаев и заболеваемости
+            const cases = csvDistrictData[casesKey] || 0;
+            let rate = csvDistrictData[rateKey] || 0;
+            
+            // Ищем население по ключам
+            let population = 0;
+            let foundPopulationKey = '';
+            
+            // Сначала ищем по всем ключам с годом
+            for (const key of populationKeys) {
+                if (csvDistrictData[key] !== undefined && csvDistrictData[key] !== '' && csvDistrictData[key] !== '0') {
+                    population = csvDistrictData[key];
+                    foundPopulationKey = key;
+                    break;
+                }
+            }
+            
+            // Если не нашли, ищем по всем ключам в данных (регулярное выражение)
+            if (population === 0) {
+                for (const key in csvDistrictData) {
+                    if ((key.includes('Население') || key.includes('population')) && 
+                        csvDistrictData[key] !== undefined && csvDistrictData[key] !== '' && csvDistrictData[key] !== '0') {
+                        population = csvDistrictData[key];
+                        foundPopulationKey = key;
+                        break;
+                    }
+                }
+            }
+            
+            // Преобразуем в числа (заменяем запятую на точку если нужно)
+            if (cases === '-' || cases === undefined || cases === null || cases === '') {
+    feature.properties.cases = '-'; // Отсутствие данных
+} else if (typeof cases === 'string') {
+    feature.properties.cases = parseFloat(cases.replace(',', '.')) || 0;
+} else {
+    feature.properties.cases = Number(cases) || 0;
+}
+            if (typeof rate === 'string') {
+                feature.properties.rate = parseFloat(rate.replace(',', '.')) || 0;
+            } else {
+                feature.properties.rate = Number(rate) || 0;
+            }
+            
+            if (typeof population === 'string') {
+                feature.properties.population = parseFloat(population.replace(',', '.')) || 0;
+            } else {
+                feature.properties.population = Number(population) || 0;
+            }
+            
+            feature.properties.csvDistrictName = csvDistrictName;
+            feature.properties.foundPopulationKey = foundPopulationKey;
+            
+            console.log(`Обновлен ${geoDistrictName} (${currentYear}): cases=${feature.properties.cases}, rate=${feature.properties.rate}, population=${feature.properties.population} (ключ: ${foundPopulationKey})`);
+        } else {
+            unmatchedDistricts++;
+            console.warn(`Нет CSV данных для района: ${geoDistrictName}`);
+            feature.properties.cases = 0;
+            feature.properties.rate = 0;
+            feature.properties.population = 0;
+            feature.properties.csvDistrictName = 'не найдено';
+        }
+    });
+    
+    // Выводим статистику сопоставления
+    console.log(`Сопоставление районов: найдено ${matchedDistricts}, не найдено ${unmatchedDistricts}`);
+    
+    // Создаем слой с обновленными данными
+    currentGeoJSONLayer = L.geoJSON(updatedGeoJSON, {
+        style: function(feature) {
+            const rate = Number(feature.properties.rate) || 0;
+            return {
+                fillColor: getColor(rate),
+                weight: 2.5,
+                opacity: 1,
+                color: '#2c5aa0',
+                dashArray: '',
+                fillOpacity: 0.8
+            };
+        },
+        onEachFeature: function(feature, layer) {
+            // Создаем содержимое для подсказки при наведении
+            const tooltipContent = `
+                <div class="district-tooltip">
+                    <div class="tooltip-title">${feature.properties.name || feature.properties.NAME || 'Район'}</div>
+                    Население (${currentYear}): <b>${feature.properties.population ? feature.properties.population.toLocaleString() : 'нет данных'}</b><br>
+                    Заболевание: <b>${getDiseaseName(currentDisease)}</b><br>
+                    Год: <b>${currentYear}</b><br>
+                    Случаев: <b>${feature.properties.cases || 0}</b><br>
+                    Заболеваемость: <b>${feature.properties.rate || 0}</b> на 100 тыс.
+                </div>
+            `;
+            
+            // Добавляем подсказку при наведении
+            layer.bindTooltip(tooltipContent, {
+                permanent: false,
+                direction: 'auto',
+                className: 'custom-tooltip',
+                offset: [0, 0],
+                opacity: 0.9
+            });
+            
+            // УБИРАЕМ popup при клике - удаляем эту строку:
+            // layer.bindPopup(popupContent);
+            
+            layer.on('mouseover', function(e) {
+                this.setStyle({
+                    weight: 4,
+                    color: '#1e3c72',
+                    dashArray: '',
+                    fillOpacity: 0.9
+                });
+                this.bringToFront();
+                
+                // Показываем подсказку при наведении
+                this.openTooltip();
+            });
+            
+            layer.on('mouseout', function(e) {
+                const rate = Number(feature.properties.rate) || 0;
+                this.setStyle({
+                    fillColor: getColor(rate),
+                    weight: 2.5,
+                    opacity: 1,
+                    color: '#2c5aa0',
+                    dashArray: '',
+                    fillOpacity: 0.8
+                });
+                
+                // Скрываем подсказку при уходе мыши
+                this.closeTooltip();
+            });
+        }
+    }).addTo(map);
+    
+    // Обновляем статистику
+    updateStatistics(updatedGeoJSON);
+    
+    // Автоматическое изменение масштаба
+    map.fitBounds(currentGeoJSONLayer.getBounds());
+}
+
+    // Функция для обновления статистики (ИСПРАВЛЕННАЯ ДЛЯ УЧЕТА ОТСУТСТВИЯ ДАННЫХ)
+function updateStatistics(geoJSONData) {
+    let totalCases = 0;
+    let totalPopulation = 0;
+    let districtsWithData = 0;
+    let districtsWithZeroCases = 0;
+    let districtsWithoutData = 0;
+    
+    geoJSONData.features.forEach(feature => {
+        const cases = feature.properties.cases;
+        const population = Number(feature.properties.population) || 0;
+        const rate = Number(feature.properties.rate) || 0;
+        
+        // Проверяем, есть ли данные (не "-" и не undefined/null)
+        const hasData = cases !== '-' && cases !== undefined && cases !== null && cases !== '';
+        
+        if (hasData) {
+            const numericCases = Number(cases) || 0;
+            
+            if (numericCases > 0) {
+                totalCases += numericCases;
+                totalPopulation += population;
+                districtsWithData++;
+            } else {
+                districtsWithZeroCases++;
+            }
+        } else {
+            districtsWithoutData++;
+        }
+    });
+    
+    // ПРАВИЛЬНЫЙ РАСЧЕТ: (Всего случаев / Общее население) * 100 000
+    const avgRate = totalPopulation > 0 ? ((totalCases / totalPopulation) * 100000).toFixed(1) : 0;
+    
+    document.getElementById('total-cases').textContent = totalCases.toLocaleString();
+    document.getElementById('avg-rate').textContent = avgRate;
+    
+    // Отображаем количество районов С ДАННЫМИ (и с нулевыми случаями, и с положительными)
+    document.getElementById('districts-count').textContent = districtsWithData + districtsWithZeroCases;
+    
+    // Для отладки можно вывести подробную статистику
+    console.log(`Районы с данными: ${districtsWithData + districtsWithZeroCases} (${districtsWithData} с случаями, ${districtsWithZeroCases} с нулевыми случаями, ${districtsWithoutData} без данных)`);
+    console.log(`Всего случаев: ${totalCases}, Общее население: ${totalPopulation}, Рассчитанная заболеваемость: ${avgRate}`);
+}
+
+    // Демо-данные на случай ошибки загрузки
+    function useDemoData() {
+        console.log('Используются демонстрационные данные');
+        allGeoJSONData = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Тюмень",
+                        "opisthorchiasis_cases": 245,
+                        "opisthorchiasis_rate": 62.5,
+                        "echinococcosis_cases": 45,
+                        "echinococcosis_rate": 12.3
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [65.534328, 57.153033]
+                    }
+                },
+                {
+                    "type": "Feature", 
+                    "properties": {
+                        "name": "Тобольск",
+                        "opisthorchiasis_cases": 132,
+                        "opisthorchiasis_rate": 48.3,
+                        "echinococcosis_cases": 28,
+                        "echinococcosis_rate": 9.8
+                    },
+                    "geometry": {
+                        "type": "Point", 
+                        "coordinates": [68.249572, 58.195302]
+                    }
+                },
+                {
+                    "type": "Feature", 
+                    "properties": {
+                        "name": "Ишим",
+                        "opisthorchiasis_cases": 98,
+                        "opisthorchiasis_rate": 35.7,
+                        "echinococcosis_cases": 22,
+                        "echinococcosis_rate": 7.5
+                    },
+                    "geometry": {
+                        "type": "Point", 
+                        "coordinates": [69.490189, 56.115226]
+                    }
+                }
+            ]
+        };
+        updateMapWithFilters();
+    }
+
+    // Функция для загрузки данных по малярии
+    function loadMalariaData() {
+        console.log('Загрузка данных по малярии...');
+        // Здесь будет код для загрузки данных по малярии
+    }
+    // Обработчики для навигационной панели
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем все элементы навигационной панели
+    const navPanels = document.querySelectorAll('.nav-panel');
+    const pageContents = document.querySelectorAll('.page-content');
+    
+    // Функция для переключения страниц
+    function switchPage(pageId) {
+        // Скрываем все страницы
+        pageContents.forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // Показываем выбранную страницу
+        const targetPage = document.getElementById(`page-${pageId}`);
+        if (targetPage) {
+            targetPage.classList.add('active');
+        }
+        
+        // Обновляем активное состояние в навигации
+        navPanels.forEach(panel => {
+            panel.classList.remove('active');
+            if (panel.getAttribute('data-page') === pageId) {
+                panel.classList.add('active');
+            }
+        });
+        
+        // Если переключаемся на страницу малярии, загружаем данные
+        if (pageId === 'malaria') {
+            loadMalariaData();
+        }
+    }
+    
+    // Добавляем обработчики клика для каждой панели навигации
+    navPanels.forEach(panel => {
+        panel.addEventListener('click', function() {
+            const pageId = this.getAttribute('data-page');
+            switchPage(pageId);
+        });
+    });
+    
+    // Обработчики для кнопок в шапке
+    document.querySelector('.header-btn[title="Помощь"]').addEventListener('click', function() {
+        switchPage('about');
+    });
+    
+    // Инициализируем первую страницу
+    switchPage('map');
+});
+
+// Заглушка для функции загрузки данных по малярии
+function loadMalariaData() {
+    console.log('Загрузка данных по малярии...');
+    // Здесь будет код для загрузки данных по малярии
+    // Пока просто покажем сообщение
+    const malariaContent = document.querySelector('.malaria-content');
+    if (malariaContent) {
+        malariaContent.innerHTML = `
+            <div style="padding: 20px; background: #f8fafc; border-radius: 8px; margin: 20px 0;">
+                <h3>Маляриологическая ситуация в Российской Федерации</h3>
+                <p>Данные по малярии загружаются...</p>
+                <p>Здесь будет отображаться статистика по малярии, карта распространения и другая relevant информация.</p>
+            </div>
+        `;
+    }
+}
+
+// Заглушки для других страниц (можно добавить аналогично)
+function loadAnalyticsData() {
+    console.log('Загрузка аналитики...');
+    const analyticsContent = document.querySelector('.analytics-content');
+    if (analyticsContent) {
+        analyticsContent.innerHTML = `
+            <div style="padding: 20px; background: #f8fafc; border-radius: 8px; margin: 20px 0;">
+                <h3>Расширенная аналитика</h3>
+                <p>Здесь будут детальные аналитические отчеты и визуализации.</p>
+            </div>
+        `;
+    }
+}
+
+function loadReportsData() {
+    console.log('Загрузка отчетов...');
+    const reportsContent = document.querySelector('.reports-content');
+    if (reportsContent) {
+        reportsContent.innerHTML = `
+            <div style="padding: 20px; background: #f8fafc; border-radius: 8px; margin: 20px 0;">
+                <h3>Отчеты и экспорт данных</h3>
+                <p>Здесь будут доступны отчеты и функции экспорта данных.</p>
+            </div>
+        `;
+    }
+}
+
+// Обновляем функцию switchPage для загрузки контента при переключении
+function switchPage(pageId) {
+    // Скрываем все страницы
+    document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // Показываем выбранную страницу
+    const targetPage = document.getElementById(`page-${pageId}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+    
+    // Обновляем активное состояние в навигации
+    document.querySelectorAll('.nav-panel').forEach(panel => {
+        panel.classList.remove('active');
+        if (panel.getAttribute('data-page') === pageId) {
+            panel.classList.add('active');
+        }
+    });
+    
+    // Загружаем данные для конкретной страницы
+    switch(pageId) {
+        case 'malaria':
+            loadMalariaData();
+            break;
+        case 'analytics':
+            loadAnalyticsData();
+            break;
+        case 'reports':
+            loadReportsData();
+            break;
+        case 'about':
+            loadAboutData();
+            break;
+    }
+}
+// Обработчик для выбора района
+document.getElementById('district-select').addEventListener('change', function(e) {
+    const selectedDistrict = e.target.value;
+    
+    // Сбрасываем стиль всех районов
+    if (currentGeoJSONLayer) {
+        currentGeoJSONLayer.eachLayer(function(layer) {
+            const rate = Number(layer.feature.properties.rate) || 0;
+            layer.setStyle({
+                fillColor: getColor(rate),
+                ...getBorderStyle(rate)
+            });
+        });
+    }
+    
+    // Если выбран конкретный район, подсвечиваем его
+    if (selectedDistrict !== 'all' && currentGeoJSONLayer) {
+        currentGeoJSONLayer.eachLayer(function(layer) {
+            const districtName = layer.feature.properties.name || 
+                                layer.feature.properties.NAME || 
+                                layer.feature.properties.csvDistrictName || '';
+            
+            if (districtName === selectedDistrict) {
+                // Подсветка выбранного района
+                layer.setStyle({
+                    weight: 5,
+                    color: '#ff6b6b', // Красный контур для выделения
+                    fillColor: getColor(Number(layer.feature.properties.rate) || 0),
+                    fillOpacity: 0.9
+                });
+                layer.bringToFront();
+                
+                // Центрируем карту на выбранном районе
+                map.fitBounds(layer.getBounds(), {
+                    padding: [50, 50], // Отступы от краев
+                    maxZoom: 10 // Максимальный zoom
+                });
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>
